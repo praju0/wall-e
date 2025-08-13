@@ -1,0 +1,379 @@
+import React, { useState } from 'react';
+import { ShoppingCart, Home, Info, Mail, Utensils, X, Printer } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger, DialogClose } from '@radix-ui/react-dialog';
+
+// Custom dialog component to replace alert()
+const CustomAlert = ({ isOpen, onClose, title, message }) => {
+  if (!isOpen) return null;
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50">
+        <div className="flex flex-col space-y-2">
+          <DialogTitle className="text-xl font-bold">{title}</DialogTitle>
+          <DialogDescription className="mt-2 text-gray-600">{message}</DialogDescription>
+        </div>
+        <div className="mt-4 text-right">
+          <DialogClose asChild>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            >
+              OK
+            </button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Menu Page Component
+const MenuPage = ({ cart, setCart, total, setTotal }) => {
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  const menuItems = [
+    { category: "🍔 Fast Food", items: [
+      { name: "Burger", price: 120, img: "https://placehold.co/400x300/E5E5E5/333333?text=Burger" },
+      { name: "Pizza", price: 180, img: "https://placehold.co/400x300/E5E5E5/333333?text=Pizza" },
+      { name: "French Fries", price: 90, img: "https://placehold.co/400x300/E5E5E5/333333?text=French+Fries" },
+      { name: "Hakka Noodles", price: 110, img: "https://placehold.co/400x300/E5E5E5/333333?text=Hakka+Noodles" },
+    ]},
+    { category: "🥞 Breakfast", items: [
+      { name: "Idli Vada", price: 60, img: "https://placehold.co/400x300/E5E5E5/333333?text=Idli+Vada" },
+    ]},
+    { category: "🍛 South Indian", items: [
+      { name: "Poori", price: 80, img: "https://placehold.co/400x300/E5E5E5/333333?text=Dosa" }, // Using dosa image for Poori
+      { name: "Upma", price: 60, img: "https://placehold.co/400x300/E5E5E5/333333?text=Upma" },
+    ]},
+    { category: "🍽️ Full Meals", items: [
+      { name: "Veg Meals", price: 120, img: "https://placehold.co/400x300/E5E5E5/333333?text=Veg+Meals" },
+    ]},
+    { category: "🍹 Beverages", items: [
+      { name: "Watermelon", price: 50, img: "https://placehold.co/400x300/E5E5E5/333333?text=Watermelon" },
+      { name: "Orange", price: 50, img: "https://placehold.co/400x300/E5E5E5/333333?text=Orange" },
+    ]},
+    { category: "🍦 Desserts", items: [
+      { name: "Chocolate Ice Cream", price: 40, img: "https://placehold.co/400x300/E5E5E5/333333?text=Chocolate+Ice+Cream" },
+      { name: "Vanilla Ice Cream", price: 40, img: "https://placehold.co/400x300/E5E5E5/333333?text=Vanilla+Ice+Cream" },
+    ]},
+  ];
+
+  const addToCart = (item, price) => {
+    setCart(prevCart => ({
+      ...prevCart,
+      [item]: prevCart[item]
+        ? { ...prevCart[item], quantity: prevCart[item].quantity + 1, subtotal: prevCart[item].subtotal + price }
+        : { price: price, quantity: 1, subtotal: price }
+    }));
+    setTotal(prevTotal => prevTotal + price);
+  };
+
+  const clearCart = () => {
+    setCart({});
+    setTotal(0);
+  };
+
+  const submitOrder = (e) => {
+    e.preventDefault();
+    if (Object.keys(cart).length === 0) {
+      setAlertMessage("Cart is empty! Please add items before placing an order.");
+      setIsAlertOpen(true);
+      return;
+    }
+    // Logic for submitting order could go here
+    setAlertMessage("Thank you for your order! We’ll get in touch with you shortly. 😊");
+    setIsAlertOpen(true);
+    e.target.reset();
+  };
+  
+  const handlePrintReceipt = () => {
+    if (Object.keys(cart).length === 0) {
+      setAlertMessage("Your cart is empty. Please add items before printing.");
+      setIsAlertOpen(true);
+      return;
+    }
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Wall-Eats Receipt</title>');
+    printWindow.document.write('<style>body{font-family:sans-serif;padding:20px;} h2{color:#333;} ul{padding-left:20px;} li{margin-bottom:8px;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write('<h2>🧾 Wall-Eats Receipt</h2>');
+    printWindow.document.write('<p><strong>Name:</strong> ' + document.getElementById("customer-name").value + '</p>');
+    printWindow.document.write('<p><strong>Email:</strong> ' + document.getElementById("customer-email").value + '</p>');
+    printWindow.document.write('<ul>');
+    for (let item in cart) {
+      printWindow.document.write(`<li>${item} x${cart[item].quantity} — ₹${cart[item].subtotal}</li>`);
+    }
+    printWindow.document.write('</ul>');
+    printWindow.document.write('<p><strong>Total:</strong> ₹' + total + '</p>');
+    printWindow.document.write('<p>Thank you for ordering with Wall-Eats!</p>');
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  return (
+    <section>
+      {menuItems.map(category => (
+        <React.Fragment key={category.category}>
+          <h2 className="text-2xl font-semibold my-4">{category.category}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {category.items.map(item => (
+              <div key={item.name} className="bg-white p-4 rounded-lg shadow-md flex flex-col items-center">
+                <img src={item.img} alt={item.name} className="w-full h-48 object-cover rounded-md mb-2"/>
+                <h3 className="text-lg font-bold">{item.name}</h3>
+                <p className="text-gray-600">₹{item.price}</p>
+                <button
+                  onClick={() => addToCart(item.name, item.price)}
+                  className="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Add to Cart
+                </button>
+              </div>
+            ))}
+          </div>
+        </React.Fragment>
+      ))}
+
+      <hr className="my-8" />
+      <div className="bg-white p-6 rounded-lg shadow-lg">
+        <h3 className="text-xl font-bold">Your Cart</h3>
+        <ul className="mt-2 list-none p-0">
+          {Object.keys(cart).length > 0 ? (
+            Object.keys(cart).map(item => (
+              <li key={item} className="p-2 border-b last:border-b-0">
+                {item} x{cart[item].quantity} — ₹{cart[item].subtotal}
+              </li>
+            ))
+          ) : (
+            <li className="text-gray-500">Your cart is empty.</li>
+          )}
+        </ul>
+        <p className="text-xl font-bold mt-4">Total: ₹<span id="total">{total}</span></p>
+        <div className="mt-4 flex space-x-4">
+          <button
+            onClick={clearCart}
+            className="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Clear Cart
+          </button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                onClick={() => {
+                  if (Object.keys(cart).length === 0) {
+                    setAlertMessage("Your cart is empty. Please add items before printing.");
+                    setIsAlertOpen(true);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                <Printer className="inline-block mr-2" size={16} /> Print Receipt
+              </button>
+            </DialogTrigger>
+            {Object.keys(cart).length > 0 && (
+              <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50">
+                <div className="flex flex-col space-y-2">
+                  <DialogTitle className="text-xl font-bold">🧾 Wall-Eats Receipt</DialogTitle>
+                </div>
+                <div className="mt-4">
+                  <p><strong>Name:</strong> <span id="receipt-name">{document.getElementById("customer-name")?.value || "N/A"}</span></p>
+                  <p><strong>Email:</strong> <span id="receipt-email">{document.getElementById("customer-email")?.value || "N/A"}</span></p>
+                  <ul className="mt-2" id="receipt-items">
+                    {Object.keys(cart).map(item => (
+                      <li key={item}>{item} x{cart[item].quantity} — ₹{cart[item].subtotal}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xl font-bold mt-4">Total: ₹<span>{total}</span></p>
+                  <p className="mt-2">Thank you for ordering with Wall-Eats!</p>
+                </div>
+                <div className="mt-4 text-right">
+                  <DialogClose asChild>
+                    <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Close</button>
+                  </DialogClose>
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
+        </div>
+
+        <form onSubmit={submitOrder} className="mt-8 p-4 bg-gray-100 rounded-lg">
+          <h3 className="text-lg font-bold">Place Your Order</h3>
+          <input
+            type="text"
+            id="customer-name"
+            placeholder="Your Name"
+            required
+            className="mt-2 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500"
+          />
+          <input
+            type="email"
+            id="customer-email"
+            placeholder="Your Email"
+            required
+            className="mt-2 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500"
+          />
+          <button type="submit" className="mt-4 w-full bg-blue-500 text-white font-bold py-2 rounded-lg hover:bg-blue-600 transition-colors">
+            Place Order
+          </button>
+        </form>
+      </div>
+      <CustomAlert isOpen={isAlertOpen} onClose={() => setIsAlertOpen(false)} title="Notification" message={alertMessage} />
+    </section>
+  );
+};
+
+// About Page Component
+const AboutPage = () => (
+  <section className="bg-white p-6 rounded-lg shadow-lg">
+    <h2 className="text-2xl font-bold text-center mb-4">About Wall-E</h2>
+    <div className="prose max-w-none">
+      <p>
+        <strong>Wall-E</strong> is an innovative, AI-powered waiter robot designed to revolutionize the dining experience in cafes and restaurants.
+      </p>
+      <p>
+        Our robot efficiently delivers food from the kitchen to customers’ tables, reducing the workload on human staff and improving service speed. With smooth navigation and obstacle detection, Wall-Eats is safe, reliable, and friendly.
+      </p>
+      <p>
+        It integrates technologies like line-following sensors, IR detection, and programmable paths to ensure precise, hands-free delivery. Whether it's a busy restaurant or a modern smart café, Wall-Eats is the future of hospitality automation.
+      </p>
+      <ul className="list-disc pl-5 space-y-2 mt-4">
+        <li>🤖 Semi-automated delivery robot</li>
+        <li>🛣️ Line-following system for path control</li>
+        <li>🔋 Long-lasting battery operation</li>
+        <li>📱 Touch-free, hygienic food service</li>
+      </ul>
+      <img src="https://placehold.co/800x400/E5E5E5/333333?text=Wall-Eats+Robot" alt="Wall-Eats Robot" className="w-full h-auto rounded-lg mt-6"/>
+    </div>
+  </section>
+);
+
+// Contact Page Component
+const ContactPage = () => (
+  <section className="bg-white p-6 rounded-lg shadow-lg text-center">
+    <h2 className="text-2xl font-bold mb-4">Get in Touch</h2>
+    <div className="prose max-w-none">
+      <p className="text-lg">
+        <strong>Email:</strong> prajuprajwal2004@gmail.com
+      </p>
+      <p className="text-lg">
+        <strong>Phone:</strong> +91 7338012565
+      </p>
+      <p className="text-lg">
+        <strong>Phone:</strong> +91 8088163846
+      </p>
+      <p className="text-lg">
+        <strong>Phone:</strong> +91 7569477485
+      </p>
+    </div>
+  </section>
+);
+
+// Home Page Component
+const HomePage = ({ onNavigate }) => (
+  <>
+    <section className="bg-white p-6 rounded-lg shadow-lg text-center mb-6">
+      <h2 className="text-3xl font-bold mb-2">Welcome to Wall-Eats!</h2>
+      <p className="text-lg">Hungry? Let <strong>Wall-Eats</strong> serve you! 🍽️</p>
+      <p className="mt-4">
+        Meet our smart and friendly waiter robot designed to bring your favorite meals right to your table — no waiting, no confusion, just smooth service with a robotic smile.
+      </p>
+      <p className="mt-4">
+        At Wall-Eats, we believe dining should be delightful. That’s why we built a robot that blends technology with hospitality — making restaurant experiences faster, safer, and more fun.
+      </p>
+      <p className="mt-4">
+        From the kitchen to your seat, Wall-Eats follows a guided path, avoids obstacles, and delivers food with precision. Whether you're in a café, a smart restaurant, or a tech fair — our robot adds a modern twist to traditional service.
+      </p>
+      <ul className="list-disc pl-5 inline-block text-left mt-4 space-y-2">
+        <li>🤖 Friendly robot with smooth tray delivery</li>
+        <li>🛣️ Follows predefined paths to navigate the space</li>
+        <li>📦 Designed for multiple orders and safe delivery</li>
+        <li>🙌 Perfect for restaurants, events, and exhibitions</li>
+      </ul>
+      <img src="https://placehold.co/800x400/E5E5E5/333333?text=Wall-Eats+Robot" alt="Wall-Eats Robot" className="w-full h-auto rounded-lg mt-6"/>
+    </section>
+
+    <section className="bg-white p-6 rounded-lg shadow-lg text-center mb-6">
+      <h2 className="text-2xl font-bold mb-2">Ready to Eat?</h2>
+      <p>Browse our menu and place your order in just a few clicks!</p>
+      <button onClick={() => onNavigate('menu')} className="mt-4 inline-block px-6 py-3 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-colors">
+        Start Your Order
+      </button>
+    </section>
+  </>
+);
+
+// Main App Component
+const App = () => {
+  const [currentPage, setCurrentPage] = useState('home');
+  const [cart, setCart] = useState({});
+  const [total, setTotal] = useState(0);
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage onNavigate={setCurrentPage} />;
+      case 'about':
+        return <AboutPage />;
+      case 'contact':
+        return <ContactPage />;
+      case 'menu':
+        return <MenuPage cart={cart} setCart={setCart} total={total} setTotal={setTotal} />;
+      default:
+        return <HomePage onNavigate={setCurrentPage} />;
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+          body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-image: url('https://placehold.co/1920x1080/000000/FFFFFF/png?text=Futuristic+Restaurant+Background');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #333;
+          }
+          body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: -1;
+          }
+        `}
+      </style>
+      <header className="bg-gray-900 text-white p-4 flex flex-col md:flex-row md:justify-between md:items-center">
+        <div className="flex items-center justify-center md:justify-start">
+          <img src="https://placehold.co/60x60/E5E5E5/333333?text=Logo" alt="Wall-Eats Logo" className="h-10 mr-2 rounded-full"/>
+          <h1 className="text-3xl font-bold">Wall-Eats</h1>
+        </div>
+        <nav className="mt-4 md:mt-0 flex justify-center space-x-4">
+          <button onClick={() => setCurrentPage('home')} className="flex items-center text-white hover:text-gray-400 transition-colors"><Home className="mr-1" size={16}/> Home</button>
+          <button onClick={() => setCurrentPage('about')} className="flex items-center text-white hover:text-gray-400 transition-colors"><Info className="mr-1" size={16}/> About</button>
+          <button onClick={() => setCurrentPage('contact')} className="flex items-center text-white hover:text-gray-400 transition-colors"><Mail className="mr-1" size={16}/> Contact</button>
+          <button onClick={() => setCurrentPage('menu')} className="flex items-center text-white hover:text-gray-400 transition-colors"><Utensils className="mr-1" size={16}/> Menu</button>
+        </nav>
+      </header>
+
+      <main className="container mx-auto p-4 md:p-8">
+        {renderPage()}
+      </main>
+
+      <footer className="bg-gray-900 text-white text-center p-4 mt-8">
+        <p>&copy; 2025 Wall-Eats. All Rights Reserved.</p>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
